@@ -622,7 +622,7 @@ func (nc *Controller) doNoExecuteTaintingPass(ctx context.Context) {
 				// retry in 50 millisecond
 				return false, 50 * time.Millisecond
 			}
-			_, condition := controllerutil.GetNodeCondition(&node.Status, v1.NodeReady)
+			condition := controllerutil.GetNodeCondition(&node.Status, v1.NodeReady)
 			if condition == nil {
 				logger.Info("Failed to get NodeCondition from the node status", "node", klog.KRef("", value.Value))
 				// retry in 50 millisecond
@@ -828,7 +828,7 @@ func (nc *Controller) tryUpdateNodeHealth(ctx context.Context, node *v1.Node) (t
 
 	var gracePeriod time.Duration
 	var observedReadyCondition v1.NodeCondition
-	_, currentReadyCondition := controllerutil.GetNodeCondition(&node.Status, v1.NodeReady)
+	currentReadyCondition := controllerutil.GetNodeCondition(&node.Status, v1.NodeReady)
 	if currentReadyCondition == nil {
 		// If ready condition is nil, then kubelet (or nodecontroller) never posted node status.
 		// A fake ready condition is created, where LastHeartbeatTime and LastTransitionTime is set
@@ -871,7 +871,7 @@ func (nc *Controller) tryUpdateNodeHealth(ctx context.Context, node *v1.Node) (t
 	var savedCondition *v1.NodeCondition
 	var savedLease *coordv1.Lease
 	if nodeHealth != nil {
-		_, savedCondition = controllerutil.GetNodeCondition(nodeHealth.status, v1.NodeReady)
+		savedCondition = controllerutil.GetNodeCondition(nodeHealth.status, v1.NodeReady)
 		savedLease = nodeHealth.lease
 	}
 	logger := klog.FromContext(ctx)
@@ -943,7 +943,7 @@ func (nc *Controller) tryUpdateNodeHealth(ctx context.Context, node *v1.Node) (t
 
 		nowTimestamp := nc.now()
 		for _, nodeConditionType := range nodeConditionTypes {
-			_, currentCondition := controllerutil.GetNodeCondition(&node.Status, nodeConditionType)
+			currentCondition := controllerutil.GetNodeCondition(&node.Status, nodeConditionType)
 			if currentCondition == nil {
 				logger.V(2).Info("Condition of node was never updated by kubelet", "nodeConditionType", nodeConditionType, "node", klog.KObj(node))
 				node.Status.Conditions = append(node.Status.Conditions, v1.NodeCondition{
@@ -966,7 +966,17 @@ func (nc *Controller) tryUpdateNodeHealth(ctx context.Context, node *v1.Node) (t
 			}
 		}
 		// We need to update currentReadyCondition due to its value potentially changed.
-		_, currentReadyCondition = controllerutil.GetNodeCondition(&node.Status, v1.NodeReady)
+		currentReadyCondition = controllerutil.GetNodeCondition(&node.Status, v1.NodeReady)
+		if currentReadyCondition == nil {
+			currentReadyCondition = &v1.NodeCondition{
+				Type:               v1.NodeReady,
+				Status:             v1.ConditionUnknown,
+				Reason:             "NodeStatusNeverUpdated",
+				Message:            "Kubelet never posted node status.",
+				LastHeartbeatTime:  node.CreationTimestamp,
+				LastTransitionTime: nowTimestamp,
+			}
+		}
 
 		if !apiequality.Semantic.DeepEqual(currentReadyCondition, &observedReadyCondition) {
 			if _, err := nc.kubeClient.CoreV1().Nodes().UpdateStatus(ctx, node, metav1.UpdateOptions{}); err != nil {
@@ -1134,7 +1144,7 @@ func (nc *Controller) processPod(ctx context.Context, podItem podUpdateItem) {
 		return
 	}
 
-	_, currentReadyCondition := controllerutil.GetNodeCondition(nodeHealth.status, v1.NodeReady)
+	currentReadyCondition := controllerutil.GetNodeCondition(nodeHealth.status, v1.NodeReady)
 	if currentReadyCondition == nil {
 		// Lack of NodeReady condition may only happen after node addition (or if it will be maliciously deleted).
 		// In both cases, the pod will be handled correctly (evicted if needed) during processing

@@ -125,7 +125,7 @@ func NewCloudCIDRAllocator(logger klog.Logger, client clientset.Interface, cloud
 			// Even if PodCIDR is assigned, but NetworkUnavailable condition is
 			// set to true, we need to process the node to set the condition.
 			networkUnavailableTaint := &v1.Taint{Key: v1.TaintNodeNetworkUnavailable, Effect: v1.TaintEffectNoSchedule}
-			_, cond := controllerutil.GetNodeCondition(&newNode.Status, v1.NodeNetworkUnavailable)
+			cond := controllerutil.GetNodeCondition(&newNode.Status, v1.NodeNetworkUnavailable)
 			if cond == nil || cond.Status != v1.ConditionFalse || utiltaints.TaintExists(newNode.Spec.Taints, networkUnavailableTaint) {
 				return ca.AllocateOrOccupyCIDR(logger, newNode)
 			}

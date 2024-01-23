@@ -3527,7 +3527,7 @@ func TestTryUpdateNodeHealth(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			_, savedReadyCondition := controllerutil.GetNodeCondition(nodeController.nodeHealthMap.getDeepCopy(test.node.Name).status, v1.NodeReady)
+			savedReadyCondition := controllerutil.GetNodeCondition(nodeController.nodeHealthMap.getDeepCopy(test.node.Name).status, v1.NodeReady)
 			savedStatus := getStatus(savedReadyCondition)
 			currentStatus := getStatus(currentReadyCondition)
 			if !apiequality.Semantic.DeepEqual(currentStatus, savedStatus) {
