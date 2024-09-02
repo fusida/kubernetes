@@ -20,14 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
-	"reflect"
-	"sort"
-	"strconv"
-	"strings"
-	"sync"
-	"testing"
-
 	"github.com/google/go-cmp/cmp"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,6 +31,13 @@ import (
 	"k8s.io/apiserver/pkg/storage"
 	"k8s.io/apiserver/pkg/storage/value"
 	utilpointer "k8s.io/utils/pointer"
+	"math"
+	"reflect"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"testing"
 )
 
 type KeyValidation func(ctx context.Context, t *testing.T, key string)
@@ -2671,7 +2670,6 @@ func RunTestTransformationFailure(ctx context.Context, t *testing.T, store Inter
 
 func RunTestCount(ctx context.Context, t *testing.T, store storage.Interface) {
 	resourceA := "/foo.bar.io/abc"
-
 	// resourceA is intentionally a prefix of resourceB to ensure that the count
 	// for resourceA does not include any objects from resourceB.
 	resourceB := fmt.Sprintf("%sdef", resourceA)
