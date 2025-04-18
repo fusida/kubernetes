@@ -542,8 +542,12 @@ func (e *Controller) syncService(ctx context.Context, key string) error {
 	// there are some operations (webhooks, truncated endpoints, ...) that can potentially cause endpoints updates became noop
 	// and return the same resourceVersion.
 	// Ref: https://issues.k8s.io/127370 , https://issues.k8s.io/126578
-	if updatedEndpoints != nil && updatedEndpoints.ResourceVersion != currentEndpoints.ResourceVersion {
-		e.staleEndpointsTracker.Stale(currentEndpoints)
+	if updatedEndpoints != nil {
+		if updatedEndpoints.ResourceVersion != currentEndpoints.ResourceVersion {
+			e.staleEndpointsTracker.Stale(currentEndpoints)
+		} else {
+			e.staleEndpointsTracker.Delete(currentEndpoints.Namespace, currentEndpoints.Name)
+		}
 	}
 	return nil
 }
